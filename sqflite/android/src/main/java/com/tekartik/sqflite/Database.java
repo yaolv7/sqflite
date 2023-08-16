@@ -214,7 +214,10 @@ class Database {
         Map<String, Object> results = null;
         List<List<Object>> rows = null;
         int columnCount = 0;
-        while (cursor.moveToNext()) {
+
+      setCursorWindowSize(cursor);
+
+      while (cursor.moveToNext()) {
 
             if (results == null) {
                 rows = new ArrayList<>();
