@@ -50,6 +50,8 @@ import java.util.Map;
 
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
+import java.lang.reflect.Field;
+import android.database.CursorWindow;
 
 class Database {
     // To turn on when supported fully
@@ -500,6 +502,8 @@ class Database {
             SQLiteDatabase db = getWritableDatabase();
 
             cursor = db.rawQuery(sql, null);
+            setCursorWindowSize(cursor);
+
             if (cursor != null && cursor.getCount() > 0 && cursor.moveToFirst()) {
                 final int changed = cursor.getInt(0);
 
@@ -554,6 +558,8 @@ class Database {
             SQLiteDatabase db = getWritableDatabase();
 
             cursor = db.rawQuery("SELECT changes()", null);
+            setCursorWindowSize(cursor);
+
             if (cursor != null && cursor.getCount() > 0 && cursor.moveToFirst()) {
                 final int changed = cursor.getInt(0);
                 if (LogLevel.hasSqlLevel(logLevel)) {
@@ -650,6 +656,27 @@ class Database {
             result.success(null);
         } else {
             result.success(results);
+        }
+    }
+
+    /**
+     * 解决CursorWindow不能大于 com.android.internal.R.integer.config_cursorWindowSize) * 1024 的问题
+     */
+    private void setCursorWindowSize(Cursor cur) {
+        if (cur != null) {
+            int size = 104857600; // 1024 * 1024 * 100
+
+            if (cur instanceof SQLiteCursor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                ((SQLiteCursor) cur).setWindow(new CursorWindow(null, size));
+            } else {
+                try {
+                    Field field = CursorWindow.class.getDeclaredField("sCursorWindowSize");
+                    field.setAccessible(true);
+                    field.set(null, size);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
